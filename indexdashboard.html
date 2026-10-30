@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Usability Dashboard — SUS & ASQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --royal: #1e3a8a;
+      --royal-light: #2563eb;
+      --gold: #d97706;
+      --gold-soft: #fef3c7;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 24px; line-height: 1.5; }
+    .container { max-width: 1320px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+      color: #fff;
+      padding: 26px 32px;
+      border-radius: var(--radius);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 22px;
+      box-shadow: 0 12px 24px -6px rgba(30, 58, 138, 0.28);
+    }
+    .header h1 { font-size: 1.55rem; font-weight: 800; }
+    .header p { color: #dbeafe; font-size: 0.9rem; margin-top: 4px; }
+    .header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .user-badge {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #fef3c7;
+    }
+
+    /* Bento KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 22px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.03);
+    }
+    .kpi-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .kpi-main {
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: var(--royal);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .kpi-sub { font-size: 0.83rem; color: var(--muted); margin-top: 6px; }
+
+    .pill {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      display: inline-block;
+    }
+    .pill-success { background: #d1fae5; color: #065f46; }
+    .pill-warning { background: #fef3c7; color: #92400e; }
+    .pill-danger  { background: #fee2e2; color: #991b1b; }
+
+    /* Two Columns Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+    @media (max-width: 1024px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-head h2 { font-size: 1.1rem; font-weight: 700; color: var(--royal); }
+    .tag {
+      background: var(--gold-soft);
+      color: var(--gold);
+      font-weight: 700;
+      font-size: 0.74rem;
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    /* Live Preview Box inside Form */
+    .live-preview {
+      background: linear-gradient(90deg, #eff6ff 0%, #f8fafc 100%);
+      border: 1px solid #bfdbfe;
+      border-left: 5px solid var(--royal-light);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .live-preview-title { font-size: 0.8rem; font-weight: 700; color: var(--royal); text-transform: uppercase; }
+    .live-preview-val { font-size: 1.35rem; font-weight: 800; color: var(--royal); }
+
+    /* Form Elements */
+    .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 5px; color: var(--text); }
+    input[type="text"], select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.88rem;
+      background: #fff;
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: var(--royal-light);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .q-row {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .q-text { font-size: 0.82rem; flex: 1; color: #1e293b; }
+    .q-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 6px;
+    }
+    .q-odd { background: #dbeafe; color: #1e40af; }
+    .q-even { background: #fce7f3; color: #9d174d; }
+    .q-contrib {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      min-width: 68px;
+      text-align: right;
+    }
+    .score-select { width: 110px; font-weight: 600; }
+
+    /* Buttons */
+    .btn-group { display: flex; gap: 10px; margin-top: 12px; }
+    .btn {
+      background: var(--royal);
+      color: #fff;
+      border: none;
+      padding: 11px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex: 1;
+    }
+    .btn:hover { background: var(--royal-light); }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #1e293b;
+      flex: 0.45;
+    }
+    .btn-secondary:hover { background: #cbd5e1; }
+    .btn-danger-sm {
+      background: #fee2e2;
+      color: #991b1b;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-danger-sm:hover { background: #fecaca; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    th, td { padding: 10px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    th {
+      background: #f8fafc;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.73rem;
+      text-transform: uppercase;
+    }
+    .inline-num {
+      width: 52px;
+      padding: 4px 6px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+
+    .chart-container { height: 290px; position: relative; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header class="header">
+    <div>
+      <h1>Interactive Usability Dashboard — SUS & ASQ</h1>
+      <p>Kalkulasi & Visualisasi Real-Time System Usability Scale (10 Item) dan After-Scenario Questionnaire (3 Item)</p>
+    </div>
+    <div class="header-actions">
+      <div class="user-badge">👤 322410007 — Gerardo Yoel Aprillo Gual</div>
+      <button class="btn btn-secondary" style="padding:8px 14px;font-size:0.8rem;flex:none;" onclick="resetDefaultData()">🔄 Reset Sample</button>
+      <button class="btn btn-danger-sm" style="padding:8px 14px;font-size:0.8rem;" onclick="clearAllData()">🗑️ Kosongkan Semua</button>
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <section class="kpi-grid">
+    <div class="card">
+      <div class="kpi-label">Rata-Rata Skor SUS Global</div>
+      <div class="kpi-main">
+        <span id="kpiSusAvg">0.0</span>
+        <span id="kpiSusBadge" class="pill pill-warning">-</span>
+      </div>
+      <div class="kpi-sub" id="kpiSusDesc">Batas Rata-rata Industri: 68.0</div>
+    </div>
+
+    <div class="card">
+      <div class="kpi-label">Rata-Rata Skor ASQ</div>
+      <div class="kpi-main">
+        <span id="kpiAsqAvg">0.00</span>
+        <span id="kpiAsqBadge" class="pill pill-success">Skala 1–7</span>
+      </div>
+      <div class="kpi-sub" id="kpiAsqDesc">Evaluasi kepuasan tingkat skenario</div>
+    </div>
+
+    <div class="card">
+      <div class="kpi-label">Jumlah Responden SUS</div>
+      <div class="kpi-main" id="kpiSusCount">0</div>
+      <div class="kpi-sub">Total sesi sistem yang dievaluasi</div>
+    </div>
+
+    <div class="card">
+      <div class="kpi-label">Jumlah Skenario ASQ</div>
+      <div class="kpi-main" id="kpiAsqCount">0</div>
+      <div class="kpi-sub">Total tugas (task) yang diuji</div>
+    </div>
+  </section>
+
+  <!-- Grafik Visualisasi Real-Time -->
+  <section class="grid-2">
+    <div class="card">
+      <div class="section-head">
+        <h2>Grafik Skor SUS per Responden vs Standar (68)</h2>
+        <span class="tag">Dinamis (0 - 100)</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="susChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-head">
+        <h2>Grafik Rata-Rata 3 Dimensi ASQ & Tren Skenario</h2>
+        <span class="tag">Dinamis (Skala 1 - 7)</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="asqChart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Form Input Interaktif SUS & ASQ -->
+  <section class="grid-2">
+    <!-- Kolom Kiri: Form SUS -->
+    <div class="card">
+      <div class="section-head">
+        <h2>Input Kuesioner SUS (10 Pernyataan)</h2>
+        <span class="tag">Skala Likert 1–5</span>
+      </div>
+
+      <!-- Live Output Preview SUS -->
+      <div class="live-preview">
+        <div>
+          <div class="live-preview-title">Live Output Preview (Sebelum Disimpan)</div>
+          <div style="font-size:0.8rem;color:var(--muted);">Total Kontribusi: <strong id="liveSusContrib">0</strong> / 40 poin (× 2.5)</div>
+        </div>
+        <div style="text-align:right;">
+          <span class="live-preview-val" id="liveSusScore">0.0</span>
+          <span id="liveSusPill" class="pill pill-warning">Grade -</span>
+        </div>
+      </div>
+
+      <form id="susForm">
+        <div class="form-group">
+          <label>Nama / Kode Responden</label>
+          <input type="text" id="susName" placeholder="Masukkan nama responden (misal: Responden 04 - Dinda)" required />
+        </div>
+
+        <div id="susQuestionsList"></div>
+
+        <div class="btn-group">
+          <button type="submit" class="btn">+ Simpan ke Tabel & Grafik SUS</button>
+          <button type="button" class="btn btn-secondary" onclick="randomizeSusForm()">🎲 Isi Acak</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Kolom Kanan: Form ASQ & Tabel ASQ -->
+    <div class="card">
+      <div class="section-head">
+        <h2>Input Kuesioner ASQ (3 Pernyataan)</h2>
+        <span class="tag">Skala Likert 1–7 / N/A</span>
+      </div>
+
+      <!-- Live Output Preview ASQ -->
+      <div class="live-preview">
+        <div>
+          <div class="live-preview-title">Live Output Skor ASQ Skenario Ini</div>
+          <div style="font-size:0.8rem;color:var(--muted);" id="liveAsqValidInfo">Menghitung 3 item valid</div>
+        </div>
+        <div style="text-align:right;">
+          <span class="live-preview-val" id="liveAsqScore">6.00</span>
+          <span class="pill pill-success">/ 7.00</span>
+        </div>
+      </div>
+
+      <form id="asqForm">
+        <div class="input-row">
+          <div>
+            <label>Nama Responden</label>
+            <input type="text" id="asqRespondent" placeholder="Contoh: Responden 04" required />
+          </div>
+          <div>
+            <label>Nama Tugas / Skenario</label>
+            <input type="text" id="asqScenario" placeholder="Contoh: Task 4 - Filter Katalog" required />
+          </div>
+        </div>
+
+        <div class="q-row">
+          <div class="q-text">
+            <strong>1. Ease of completing the task:</strong><br/>
+            Kepuasan terhadap kemudahan menyelesaikan tugas pada skenario ini.
+          </div>
+          <select id="asqQ1" class="score-select asq-live-input">
+            <option value="7">7 - Sangat Setuju</option>
+            <option value="6" selected>6 - Setuju</option>
+            <option value="5">5 - Agak Setuju</option>
+            <option value="4">4 - Netral</option>
+            <option value="3">3 - Agak Tidak Setuju</option>
+            <option value="2">2 - Tidak Setuju</option>
+            <option value="1">1 - Sangat Tidak Setuju</option>
+            <option value="NA">N/A (Tidak Berlaku)</option>
+          </select>
+        </div>
+
+        <div class="q-row">
+          <div class="q-text">
+            <strong>2. Time required:</strong><br/>
+            Kepuasan terhadap waktu yang dibutuhkan untuk menyelesaikan tugas.
+          </div>
+          <select id="asqQ2" class="score-select asq-live-input">
+            <option value="7">7 - Sangat Setuju</option>
+            <option value="6" selected>6 - Setuju</option>
+            <option value="5">5 - Agak Setuju</option>
+            <option value="4">4 - Netral</option>
+            <option value="3">3 - Agak Tidak Setuju</option>
+            <option value="2">2 - Tidak Setuju</option>
+            <option value="1">1 - Sangat Tidak Setuju</option>
+            <option value="NA">N/A (Tidak Berlaku)</option>
+          </select>
+        </div>
+
+        <div class="q-row">
+          <div class="q-text">
+            <strong>3. Support information:</strong><br/>
+            Kepuasan terhadap informasi bantuan (pesan layar, dokumentasi, petunjuk).
+          </div>
+          <select id="asqQ3" class="score-select asq-live-input">
+            <option value="7">7 - Sangat Setuju</option>
+            <option value="6">6 - Setuju</option>
+            <option value="5" selected>5 - Agak Setuju</option>
+            <option value="4">4 - Netral</option>
+            <option value="3">3 - Agak Tidak Setuju</option>
+            <option value="2">2 - Tidak Setuju</option>
+            <option value="1">1 - Sangat Tidak Setuju</option>
+            <option value="NA">N/A (Tidak Berlaku)</option>
+          </select>
+        </div>
+
+        <div class="btn-group">
+          <button type="submit" class="btn">+ Simpan ke Tabel & Grafik ASQ</button>
+          <button type="button" class="btn btn-secondary" onclick="randomizeAsqForm()">🎲 Isi Acak</button>
+        </div>
+      </form>
+
+      <!-- Tabel Rekap ASQ (Bisa Diedit & Dihapus Langsung) -->
+      <div style="margin-top:26px;">
+        <div class="section-head">
+          <h2>Tabel Rekapitulasi ASQ (Ubah Nilai Langsung di Tabel)</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Responden</th>
+                <th>Skenario</th>
+                <th>Ease (Q1)</th>
+                <th>Time (Q2)</th>
+                <th>Support (Q3)</th>
+                <th>Rata-Rata ASQ</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="asqTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabel Rekap SUS Full Width -->
+  <section class="card">
+    <div class="section-head">
+      <h2>Tabel Rekapitulasi Responden SUS (Nilai Q1–Q10 Dapat Diubah Langsung di Tabel)</h2>
+      <span class="tag">Rumus: Σ Kontribusi × 2.5</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Responden</th>
+            <th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Q5</th>
+            <th>Q6</th><th>Q7</th><th>Q8</th><th>Q9</th><th>Q10</th>
+            <th>Σ Kontribusi</th>
+            <th>Skor SUS</th>
+            <th>Grade & Interpretasi</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="susTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+  const susStatements = [
+    "Saya pikir saya akan sering menggunakan sistem ini.",
+    "Saya merasa sistem ini terlalu rumit padahal bisa dibuat lebih sederhana.",
+    "Saya rasa sistem ini mudah digunakan.",
+    "Saya pikir saya membutuhkan bantuan teknisi untuk dapat menggunakan sistem ini.",
+    "Saya menemukan berbagai fungsi dalam sistem ini terintegrasi dengan baik.",
+    "Saya rasa terlalu banyak ketidakkonsistenan dalam sistem ini.",
+    "Saya bayangkan kebanyakan orang akan mudah mempelajari sistem ini dengan cepat.",
+    "Saya merasa sistem ini sangat kaku/merepotkan untuk digunakan.",
+    "Saya merasa sangat percaya diri menggunakan sistem ini.",
+    "Saya perlu belajar banyak hal terlebih dahulu sebelum bisa menggunakan sistem ini."
+  ];
+
+  // 1. Render 10 Pertanyaan SUS beserta event listener live preview
+  const susListEl = document.getElementById('susQuestionsList');
+  susStatements.forEach((text, i) => {
+    const qNum = i + 1;
+    const isOdd = qNum % 2 !== 0;
+    const defaultVal = isOdd ? 4 : 2;
+    const row = document.createElement('div');
+    row.className = 'q-row';
+    row.innerHTML = `
+      <div class="q-text">
+        <span class="q-badge ${isOdd ? 'q-odd' : 'q-even'}">${isOdd ? 'Ganjil (X-1)' : 'Genap (5-X)'}</span>
+        <strong>Q${qNum}.</strong> ${text}
+      </div>
+      <select id="susInputQ${qNum}" class="score-select sus-live-input">
+        <option value="1" ${defaultVal===1?'selected':''}>1 - STS</option>
+        <option value="2" ${defaultVal===2?'selected':''}>2 - TS</option>
+        <option value="3" ${defaultVal===3?'selected':''}>3 - Netral</option>
+        <option value="4" ${defaultVal===4?'selected':''}>4 - Setuju</option>
+        <option value="5" ${defaultVal===5?'selected':''}>5 - SS</option>
+      </select>
+      <div class="q-contrib" id="susContribQ${qNum}">Kontrib: 3</div>
+    `;
+    susListEl.appendChild(row);
+  });
+
+  // Fungsi Hitung Skor SUS
+  function calcSUS(rawArr) {
+    let sum = 0;
+    const contribs = rawArr.map((val, idx) => {
+      const c = ((idx + 1) % 2 !== 0) ? (val - 1) : (5 - val);
+      sum += c;
+      return c;
+    });
+    return { contribs, sum, score: sum * 2.5 };
+  }
+
+  // Fungsi Klasifikasi Skor SUS
+  function classifySUS(score) {
+    if (score >= 80.3) return { grade: 'A', label: 'Excellent (Acceptable)', pill: 'pill-success' };
+    if (score >= 68.0) return { grade: 'B', label: 'Good (Acceptable)', pill: 'pill-success' };
+    if (score >= 51.0) return { grade: 'C/D', label: 'Marginal (Perlu Perbaikan)', pill: 'pill-warning' };
+    return { grade: 'F', label: 'Poor (Not Acceptable)', pill: 'pill-danger' };
+  }
+
+  // Fungsi Hitung Skor ASQ (mendukung jawaban N/A)
+  function calcASQ(q1, q2, q3) {
+    const valid = [q1, q2, q3].filter(v => v !== 'NA' && !isNaN(Number(v))).map(Number);
+    if (valid.length === 0) return { avg: 0, count: 0 };
+    const sum = valid.reduce((a, b) => a + b, 0);
+    return { avg: +(sum / valid.length).toFixed(2), count: valid.length };
+  }
+
+  // Live Preview SUS saat dropdown digeser
+  function updateLiveSusPreview() {
+    const raw = [];
+    for (let i = 1; i <= 10; i++) {
+      raw.push(Number(document.getElementById(`susInputQ${i}`).value));
+    }
+    const { contribs, sum, score } = calcSUS(raw);
+    contribs.forEach((c, idx) => {
+      document.getElementById(`susContribQ${idx + 1}`).textContent = `Kontrib: ${c}`;
+    });
+    const info = classifySUS(score);
+    document.getElementById('liveSusContrib').textContent = sum;
+    document.getElementById('liveSusScore').textContent = score.toFixed(1);
+    const pill = document.getElementById('liveSusPill');
+    pill.textContent = `Grade ${info.grade} (${info.label.split(' ')[0]})`;
+    pill.className = `pill ${info.pill}`;
+  }
+
+  // Live Preview ASQ saat dropdown digeser
+  function updateLiveAsqPreview() {
+    const q1 = document.getElementById('asqQ1').value;
+    const q2 = document.getElementById('asqQ2').value;
+    const q3 = document.getElementById('asqQ3').value;
+    const { avg, count } = calcASQ(q1, q2, q3);
+    document.getElementById('liveAsqScore').textContent = avg.toFixed(2);
+    document.getElementById('liveAsqValidInfo').textContent = `Rata-rata dari ${count} item valid`;
+  }
+
+  document.querySelectorAll('.sus-live-input').forEach(el => el.addEventListener('change', updateLiveSusPreview));
+  document.querySelectorAll('.asq-live-input').forEach(el => el.addEventListener('change', updateLiveAsqPreview));
+
+  // Sample Data Awal
+  const sampleSus = [
+    { name: "Responden 01 (Andi)", raw: [5, 2, 4, 1, 5, 2, 4, 1, 5, 2] },
+    { name: "Responden 02 (Siti)", raw: [4, 2, 4, 2, 4, 2, 4, 2, 4, 2] },
+    { name: "Responden 03 (Bima)", raw: [3, 3, 3, 3, 4, 3, 3, 3, 3, 3] }
+  ];
+
+  const sampleAsq = [
+    { respondent: "Responden 01", scenario: "Task 1: Registrasi Akun", q1: "7", q2: "6", q3: "6" },
+    { respondent: "Responden 02", scenario: "Task 2: Pencarian Katalog", q1: "6", q2: "5", q3: "5" },
+    { respondent: "Responden 03", scenario: "Task 3: Checkout & Bayar", q1: "4", q2: "3", q3: "5" }
+  ];
+
+  let susData = JSON.parse(localStorage.getItem('interactive_sus_v2')) || JSON.parse(JSON.stringify(sampleSus));
+  let asqData = JSON.parse(localStorage.getItem('interactive_asq_v2')) || JSON.parse(JSON.stringify(sampleAsq));
+
+  let susChart = null;
+  let asqChart = null;
+
+  // Render Seluruh Output Tabel, KPI, dan Grafik
+  function renderAll() {
+    localStorage.setItem('interactive_sus_v2', JSON.stringify(susData));
+    localStorage.setItem('interactive_asq_v2', JSON.stringify(asqData));
+
+    // --- 1. Render Tabel & KPI SUS ---
+    const susTbody = document.getElementById('susTableBody');
+    susTbody.innerHTML = '';
+    let totalSusScore = 0;
+    const susNames = [];
+    const susScores = [];
+
+    susData.forEach((row, rIdx) => {
+      const { sum, score } = calcSUS(row.raw);
+      const info = classifySUS(score);
+      totalSusScore += score;
+      susNames.push(row.name);
+      susScores.push(score);
+
+      const tr = document.createElement('tr');
+      let qCells = '';
+      row.raw.forEach((val, qIdx) => {
+        qCells += `
+          <td>
+            <input type="number" min="1" max="5" class="inline-num" value="${val}"
+              onchange="updateSusInline(${rIdx}, ${qIdx}, this.value)" />
+          </td>`;
+      });
+
+      tr.innerHTML = `
+        <td><strong>${row.name}</strong></td>
+        ${qCells}
+        <td><strong>${sum}</strong> / 40</td>
+        <td style="font-size:0.95rem;font-weight:800;color:var(--royal);">${score.toFixed(1)}</td>
+        <td><span class="pill ${info.pill}">Grade ${info.grade} — ${info.label}</span></td>
+        <td><button class="btn-danger-sm" onclick="deleteSusRow(${rIdx})">Hapus</button></td>
+      `;
+      susTbody.appendChild(tr);
+    });
+
+    const avgSus = susData.length ? (totalSusScore / susData.length) : 0;
+    const avgSusInfo = classifySUS(avgSus);
+    document.getElementById('kpiSusAvg').textContent = avgSus.toFixed(1);
+    const susBadge = document.getElementById('kpiSusBadge');
+    susBadge.textContent = susData.length ? `Grade ${avgSusInfo.grade}` : '-';
+    susBadge.className = `pill ${avgSusInfo.pill}`;
+    document.getElementById('kpiSusDesc').textContent = susData.length ? avgSusInfo.label : 'Belum ada data responden';
+    document.getElementById('kpiSusCount').textContent = susData.length;
+
+    // --- 2. Render Tabel & KPI ASQ ---
+    const asqTbody = document.getElementById('asqTableBody');
+    asqTbody.innerHTML = '';
+    let totalAsqAvg = 0;
+    let d1Sum = 0, d1Cnt = 0, d2Sum = 0, d2Cnt = 0, d3Sum = 0, d3Cnt = 0;
+
+    asqData.forEach((row, rIdx) => {
+      const { avg } = calcASQ(row.q1, row.q2, row.q3);
+      totalAsqAvg += avg;
+
+      if (row.q1 !== 'NA') { d1Sum += Number(row.q1); d1Cnt++; }
+      if (row.q2 !== 'NA') { d2Sum += Number(row.q2); d2Cnt++; }
+      if (row.q3 !== 'NA') { d3Sum += Number(row.q3); d3Cnt++; }
+
+      const makeSelect = (field, currentVal) => {
+        const opts = ['7','6','5','4','3','2','1','NA'].map(v =>
+          `<option value="${v}" ${String(currentVal)===v?'selected':''}>${v}</option>`
+        ).join('');
+        return `<select class="inline-num" style="width:62px;" onchange="updateAsqInline(${rIdx}, '${field}', this.value)">${opts}</select>`;
+      };
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${row.respondent}</strong></td>
+        <td>${row.scenario}</td>
+        <td>${makeSelect('q1', row.q1)}</td>
+        <td>${makeSelect('q2', row.q2)}</td>
+        <td>${makeSelect('q3', row.q3)}</td>
+        <td style="font-weight:800;color:var(--royal);">${avg.toFixed(2)} / 7.00</td>
+        <td><button class="btn-danger-sm" onclick="deleteAsqRow(${rIdx})">Hapus</button></td>
+      `;
+      asqTbody.appendChild(tr);
+    });
+
+    const overallAsq = asqData.length ? (totalAsqAvg / asqData.length) : 0;
+    document.getElementById('kpiAsqAvg').textContent = overallAsq.toFixed(2);
+    document.getElementById('kpiAsqCount').textContent = asqData.length;
+    const asqBadge = document.getElementById('kpiAsqBadge');
+    if (overallAsq >= 5.5) {
+      asqBadge.textContent = 'Sangat Puas';
+      asqBadge.className = 'pill pill-success';
+    } else if (overallAsq >= 4.0) {
+      asqBadge.textContent = 'Cukup Puas';
+      asqBadge.className = 'pill pill-warning';
+    } else {
+      asqBadge.textContent = asqData.length ? 'Perlu Evaluasi' : 'Kosong';
+      asqBadge.className = 'pill pill-danger';
+    }
+
+    const dimAverages = [
+      d1Cnt ? +(d1Sum / d1Cnt).toFixed(2) : 0,
+      d2Cnt ? +(d2Sum / d2Cnt).toFixed(2) : 0,
+      d3Cnt ? +(d3Sum / d3Cnt).toFixed(2) : 0
+    ];
+
+    updateCharts(susNames, susScores, dimAverages);
+  }
+
+  // Update Grafik Chart.js secara dinamis
+  function updateCharts(susLabels, susScores, asqDimData) {
+    const ctxSus = document.getElementById('susChart').getContext('2d');
+    if (susChart) susChart.destroy();
+    susChart = new Chart(ctxSus, {
+      type: 'bar',
+      data: {
+        labels: susLabels.length ? susLabels : ['Belum ada data'],
+        datasets: [
+          {
+            label: 'Skor SUS Responden',
+            data: susScores.length ? susScores : [0],
+            backgroundColor: susScores.map(s => s >= 68 ? '#1e3a8a' : '#d97706'),
+            borderRadius: 8
+          },
+          {
+            label: 'Standar Industri (68)',
+            data: (susLabels.length ? susLabels : ['']).map(() => 68),
+            type: 'line',
+            borderColor: '#ef4444',
+            borderDash: [6, 6],
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, max: 100 } }
+      }
+    });
+
+    const ctxAsq = document.getElementById('asqChart').getContext('2d');
+    if (asqChart) asqChart.destroy();
+    asqChart = new Chart(ctxAsq, {
+      type: 'bar',
+      data: {
+        labels: ['1. Ease of Task', '2. Time Required', '3. Support Info'],
+        datasets: [{
+          label: 'Rata-Rata Dimensi ASQ (Skala 1-7)',
+          data: asqDimData,
+          backgroundColor: ['#2563eb', '#d97706', '#10b981'],
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, max: 7 } }
+      }
+    });
+  }
+
+  // Fungsi Edit Inline langsung dari Tabel SUS
+  window.updateSusInline = function(rowIdx, qIdx, newVal) {
+    let v = parseInt(newVal, 10);
+    if (isNaN(v) || v < 1) v = 1;
+    if (v > 5) v = 5;
+    susData[rowIdx].raw[qIdx] = v;
+    renderAll();
+  };
+
+  // Fungsi Edit Inline langsung dari Tabel ASQ
+  window.updateAsqInline = function(rowIdx, field, newVal) {
+    asqData[rowIdx][field] = newVal;
+    renderAll();
+  };
+
+  window.deleteSusRow = function(idx) {
+    susData.splice(idx, 1);
+    renderAll();
+  };
+
+  window.deleteAsqRow = function(idx) {
+    asqData.splice(idx, 1);
+    renderAll();
+  };
+
+  // Submit Form SUS Baru
+  document.getElementById('susForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('susName').value.trim();
+    const raw = [];
+    for (let i = 1; i <= 10; i++) {
+      raw.push(Number(document.getElementById(`susInputQ${i}`).value));
+    }
+    susData.push({ name, raw });
+    document.getElementById('susName').value = '';
+    renderAll();
+  });
+
+  // Submit Form ASQ Baru
+  document.getElementById('asqForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const respondent = document.getElementById('asqRespondent').value.trim();
+    const scenario = document.getElementById('asqScenario').value.trim();
+    const q1 = document.getElementById('asqQ1').value;
+    const q2 = document.getElementById('asqQ2').value;
+    const q3 = document.getElementById('asqQ3').value;
+    asqData.push({ respondent, scenario, q1, q2, q3 });
+    document.getElementById('asqRespondent').value = '';
+    document.getElementById('asqScenario').value = '';
+    renderAll();
+  });
+
+  // Tombol Pengisi Acak untuk Simulasi Cepat
+  window.randomizeSusForm = function() {
+    const nextNum = susData.length + 1;
+    document.getElementById('susName').value = `Responden 0${nextNum} (Simulasi)`;
+    for (let i = 1; i <= 10; i++) {
+      const isOdd = i % 2 !== 0;
+      const rand = isOdd ? Math.floor(Math.random() * 3) + 3 : Math.floor(Math.random() * 3) + 1;
+      document.getElementById(`susInputQ${i}`).value = rand;
+    }
+    updateLiveSusPreview();
+  };
+
+  window.randomizeAsqForm = function() {
+    const nextNum = asqData.length + 1;
+    document.getElementById('asqRespondent').value = `Responden 0${nextNum}`;
+    document.getElementById('asqScenario').value = `Task ${nextNum}: Uji Skenario Baru`;
+    ['asqQ1', 'asqQ2', 'asqQ3'].forEach(id => {
+      document.getElementById(id).value = String(Math.floor(Math.random() * 4) + 4);
+    });
+    updateLiveAsqPreview();
+  };
+
+  window.resetDefaultData = function() {
+    susData = JSON.parse(JSON.stringify(sampleSus));
+    asqData = JSON.parse(JSON.stringify(sampleAsq));
+    renderAll();
+  };
+
+  window.clearAllData = function() {
+    susData = [];
+    asqData = [];
+    renderAll();
+  };
+
+  // Inisialisasi awal saat halaman dibuka
+  updateLiveSusPreview();
+  updateLiveAsqPreview();
+  renderAll();
+</script>
+
+</body>
+</html>
